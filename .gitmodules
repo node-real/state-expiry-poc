@@ -1,0 +1,4 @@
+[submodule "genesis"]
+	path = genesis
+	url = https://github.com/0xbundler/bsc-genesis-contract.git
+	branch = state-expiry-dev
