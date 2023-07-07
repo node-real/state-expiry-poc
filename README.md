@@ -13,26 +13,24 @@ This repository contains the setup guide to test the State Expiry Proof-of-Conce
 
 ### Environment Setup
 
-1. For the first time, run:
+1. Clone repo and submodules.
 
-```
-git submodule update --init --recursive
+```bash
+git clone --recursive https://github.com/node-real/state-expiry-poc.git
 ```
 
-2. Clone BSC state-expiry-dev repo
+2. Prepare state expiry binary, and clone BSC repo with `state_expiry_develop` branch.
 
-```
+```bash
 git clone https://github.com/node-real/bsc --branch state_expiry_develop bsc-state-expiry
 ```
 
 3. Compile `geth` and `bootnode`, then copy to `bin` folder
 
-```
+```bash
 cd bsc-state-expiry
-make geth
-go build -o bootnode ./cmd/bootnode
-cp build/bin/geth ../bsc-deploy-state-expiry/bin
-cp bootnode ../bsc-deploy-state-expiry/bin
+make geth && go build -o bootnode ./cmd/bootnode
+mkdir -p ../state-expiry-poc/bin && cp build/bin/geth bootnode ../state-expiry-poc/bin
 ```
 
 ## 🤖 Testing Flow
@@ -59,49 +57,58 @@ When a contract is deployed, you should wait for 2 epochs (100 blocks) so that i
 
 ## 💻 Commands
 
-### Deploy 3 archive nodes
+Now, we need enter `state-expiry-poc` to run testing.
 
+```bash
+cd state-expiry-poc
 ```
+
+### Run state expiry client
+
+All setup scripts in `state-expiry-poc/scripts`, it will set up default 3 nodes config, and start them.
+
+#### Deploy 3 archive nodes
+
+```bash
 # Deploying 3 archive nodes
 # modifies the genesis such that the first account of scripts/asset/test_account.json is the initBnbHolder
 bash scripts/clusterup_set_first.sh start
 ```
 
-### Deploy 2 full node + 1 archive node
+#### Deploy 2 full node + 1 archive node
 
-```
+```bash
 bash scripts/clusterup_pruning_test.sh start
 ```
 
-### Stop cluster nodes
+#### Stop cluster nodes
 
-```
+```bash
 bash scripts/clusterup_set_first.sh stop
 ```
 
-### Test BNB transfer
+### Deploy BEP20 & Testing
 
-```
-cd test-script
-# The script keeps sending transactions until ctrl-c
-go run test_bnb_transfer.go
+Then enter `state-expiry-poc/test-contract/deploy-BEP20` to run all BEP20 scripts.
+
+It mock a fake BEP20 token to test contract slots expiry scenarios.
+
+```bash
+cd test-contract/deploy-BEP20
 ```
 
-### Deploy BEP20 Token Contract
+#### Deploy BEP20 Token Contract
 
-```
-cd bsc-deploy-state-expiry
-cd test-contract/deploy-BEP20/
+```bash
 # install dependencies
 npm install
 # deploy BEP20 Token
 npx hardhat run scripts/deploy.js
 ```
 
-### Transfer BEP20 Token & Read Balance
+#### Transfer BEP20 Token & Read Balance
 
-```
-cd test-contract/deploy-BEP20/
+```bash
 # This will transfer BEP20 Token from scripts/asset/test_account.json first account
 # This script only transfer once
 npx hardhat run scripts/transfer.js
@@ -109,17 +116,41 @@ npx hardhat run scripts/transfer.js
 npx hardhat run scripts/read-balance.js
 ```
 
-### Send revive transaction
+Now, you could use default users to `transfer` tokens, but when you stop using on-chain interactions after a period of time, `readBalance` only works because it doesn't trigger on-chain state access.
 
-```
+In the default config, after about 20 minutes, you cannot directly use the script to `transfer` tokens, may get `Access expired state` error. 
+
+In this case, you need to revive state. For details, see `test test_bep20_witness_revive`.
+
+### Other testcases
+
+Then enter `state-expiry-poc/test-script` to run all golang scripts.
+
+```bash
 cd test-script
-# The script will revive sender & receiver state, and exe a new transfer token
+```
+
+#### BNB transfer Loop
+
+```bash
+# The script keeps sending transactions until ctrl-c
+go run test_bnb_transfer.go
+```
+
+#### Send revive transaction
+
+When you BEP20 token got `Access expired state` error, you should call below script to revive you tx's accessed states. 
+
+It will call `eth_estimateGasAndReviveState` API first and got revive `Witness`, then it will send a `ReviveStateTx` with `Witness` to revive all your expired states, and execute the tx as normal.
+
+```bash
+# The script will revive sender & receiver state, and exe a new token transfer
 go run test_bep20_witness_revive.go
 ```
 
 ### Useful RPC Commands
 
-```
+```bash
 # query block height
 curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":83}' 127.0.0.1:8502
 
@@ -136,7 +167,7 @@ curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","metho
 
 The default genesis config is shown below:
 
-```
+```json
 {
   "config": {
     "chainId": 714,
@@ -160,8 +191,8 @@ The default genesis config is shown below:
     "planckBlock": 5,
     "lubanBlock": 6,
     "platoBlock": 7,
-    "claudeBlock": 10,
-    "elwoodBlock": 20,
+    "claudeBlock": 200,
+    "elwoodBlock": 400,
     "parlia": {
       "period": 3,
       "epoch": 200,
