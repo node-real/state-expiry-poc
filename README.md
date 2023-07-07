@@ -65,7 +65,7 @@ cd state-expiry-poc
 
 ### Run state expiry client
 
-All setup scripts in `state-expiry-poc/scripts`, it will set up default 3 nodes config, and start them.
+All setup scripts are available in `state-expiry-poc/scripts`. By default, it will create 3 nodes config, and start them.
 
 #### Deploy 3 archive nodes
 
@@ -91,7 +91,7 @@ bash scripts/clusterup_set_first.sh stop
 
 Then enter `state-expiry-poc/test-contract/deploy-BEP20` to run all BEP20 scripts.
 
-It mock a fake BEP20 token to test contract slots expiry scenarios.
+It mocks a fake BEP20 token to test contract slots expiry scenarios.
 
 ```bash
 cd test-contract/deploy-BEP20
@@ -116,9 +116,9 @@ npx hardhat run scripts/transfer.js
 npx hardhat run scripts/read-balance.js
 ```
 
-Now, you could use default users to `transfer` tokens, but when you stop using on-chain interactions after a period of time, `readBalance` only works because it doesn't trigger on-chain state access.
+Now, you could use the default users to `transfer` tokens, but when you stop using on-chain interactions after a period of time, only `readBalance` will work because it doesn't trigger on-chain state access.
 
-In the default config, after about 20 minutes, you cannot directly use the script to `transfer` tokens, may get `Access expired state` error. 
+Using the default config, after about 20 minutes, you cannot directly use the script to `transfer` tokens, as you may get `Access expired state` error.
 
 In this case, you need to revive state. For details, see `test test_bep20_witness_revive`.
 
@@ -139,7 +139,7 @@ go run test_bnb_transfer.go
 
 #### Send revive transaction
 
-When you BEP20 token got `Access expired state` error, you should call below script to revive you tx's accessed states. 
+When your BEP20 token contract got `Access expired state` error, you should call below script to revive your tx's accessed states.
 
 It will call `eth_estimateGasAndReviveState` API first and got revive `Witness`, then it will send a `ReviveStateTx` with `Witness` to revive all your expired states, and execute the tx as normal.
 
@@ -163,6 +163,7 @@ curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","metho
 # query tx receipt
 curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"eth_getTransactionReceipt","params":["0x782192568c8ee3393e3f3e9b7ac46e231d3cbe0b96941b642e28220ba343209b"],"id":83}' 127.0.0.1:8502
 ```
+
 ## 📝 Config
 
 The default genesis config is shown below:
@@ -183,7 +184,7 @@ The default genesis config is shown below:
     "muirGlacierBlock": 0,
     "ramanujanBlock": 0,
     "nielsBlock": 0,
-    "mirrorSyncBlock":1,
+    "mirrorSyncBlock": 1,
     "brunoBlock": 1,
     "eulerBlock": 2,
     "gibbsBlock": 3,
