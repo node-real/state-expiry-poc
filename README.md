@@ -109,6 +109,14 @@ npx hardhat run scripts/transfer.js
 npx hardhat run scripts/read-balance.js
 ```
 
+### Send revive transaction
+
+```
+cd test-script
+# The script will revive sender & receiver state, and exe a new transfer token
+go run test_bep20_witness_revive.go
+```
+
 ### Useful RPC Commands
 
 ```
@@ -124,3 +132,43 @@ curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","metho
 # query tx receipt
 curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"eth_getTransactionReceipt","params":["0x782192568c8ee3393e3f3e9b7ac46e231d3cbe0b96941b642e28220ba343209b"],"id":83}' 127.0.0.1:8502
 ```
+## 📝 Config
+
+The default genesis config is shown below:
+
+```
+{
+  "config": {
+    "chainId": 714,
+    "homesteadBlock": 0,
+    "eip150Block": 0,
+    "eip150Hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "eip155Block": 0,
+    "eip158Block": 0,
+    "byzantiumBlock": 0,
+    "constantinopleBlock": 0,
+    "petersburgBlock": 0,
+    "istanbulBlock": 0,
+    "muirGlacierBlock": 0,
+    "ramanujanBlock": 0,
+    "nielsBlock": 0,
+    "mirrorSyncBlock":1,
+    "brunoBlock": 1,
+    "eulerBlock": 2,
+    "gibbsBlock": 3,
+    "moranBlock": 4,
+    "planckBlock": 5,
+    "lubanBlock": 6,
+    "platoBlock": 7,
+    "claudeBlock": 10,
+    "elwoodBlock": 20,
+    "parlia": {
+      "period": 3,
+      "epoch": 200,
+      "stateEpochPeriod": 10
+    }
+  }
+}
+```
+
+The default EpochPeriod is 200, the state will expired in the next 2 epoch, so it will expired in max 20 minutes. `claudeBlock` is the first hard fork for state expiry, `elwoodBlock` is the second hard fork and `parlia.epoch` is the EpochPeriod.
