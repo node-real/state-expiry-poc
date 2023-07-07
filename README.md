@@ -132,7 +132,6 @@ curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","metho
 # query tx receipt
 curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"eth_getTransactionReceipt","params":["0x782192568c8ee3393e3f3e9b7ac46e231d3cbe0b96941b642e28220ba343209b"],"id":83}' 127.0.0.1:8502
 ```
-
 ## 📝 Config
 
 The default genesis config is shown below:
