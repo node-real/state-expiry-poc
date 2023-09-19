@@ -4,22 +4,21 @@ SyncMode = "full"
 NoPruning = false
 NoPrefetch = false
 LightPeers = 100
-UltraLightFraction = 75
 DatabaseCache = 512
 DatabaseFreezer = ""
 TrieCleanCache = 256
 TrieDirtyCache = 256
 TrieTimeout = 3600000000000
 EnablePreimageRecording = false
-EWASMInterpreter = ""
-EVMInterpreter = ""
 
 [Eth.Miner]
 GasFloor = 8000000
 GasCeil = 60000000
 GasPrice = 18000000000
 Recommit = 10000000000
-Noverify = false
+Etherbase = "{{etherbase}}"
+VoteEnable = false
+DisableVoteAttestation = true
 
 [Eth.TxPool]
 Locals = []

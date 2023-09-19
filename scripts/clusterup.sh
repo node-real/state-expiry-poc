@@ -10,8 +10,10 @@ bnbHolderAddr=''
 
 function exit_previous() {
 	# stop client
+	echo "kill all nodes!"
 	ps -ef  | grep geth | grep  bsc-deploy| awk '{print $2}' | xargs kill
 	ps -ef  | grep bootnode | grep  bsc-deploy| awk '{print $2}' | xargs kill
+	sleep 20
 }
 
 function generate_static_peers() {
@@ -86,14 +88,16 @@ function generateGenesis(){
     done
 
     cp ${workspace}/scripts/init_holders.template ${workspace}/genesis/init_holders.template
-    sed "s/{{INIT_HOLDER_ADDR}}/${validatorAddr[0]}/g" ${workspace}/genesis/init_holders.template > ${workspace}/genesis/init_holders.js
+    sed "s/{{INIT_HOLDER_ADDR}}/${bnbHolderAddr}/g" ${workspace}/genesis/init_holders.template > ${workspace}/genesis/init_holders.js
     node generate-validator.js
     node generate-genesis.js
 
     for((i=1;i<=$num;i++)); do
+      validatorIndex=$(($i-1))
       ${workspace}/bin/geth --datadir ${workspace}/clusterNode/node${i} init ${workspace}/genesis/genesis.json
       staticPeers=$(generate_static_peers $num $i)
       sed "s/{{StaticNodes}}/${staticPeers}/g" ${workspace}/scripts/asset/config-cluster.toml > ${workspace}/clusterNode/node${i}/config.toml
+      sed -i.bak "s/{{etherbase}}/${validatorAddr[$validatorIndex]}/g" ${workspace}/clusterNode/node${i}/config.toml
 
       p2p_port=$((30331 + i))
       sed -i.bak "s/30311/${p2p_port}/g" ${workspace}/clusterNode/node${i}/config.toml
@@ -111,33 +115,29 @@ function generateGenesis(){
     done
 }
 
-function startArchiveNode() {
+function startNode() {
     num=$1
-    nodeNum=$2
     for((i=1;i<=$num;i++)); do
-        validatorIndex=$(($nodeNum-1))
+        validatorIndex=$(($i-1))
         nohup ${workspace}/bin/geth -unlock ${validatorAddr[$validatorIndex]} --password "${workspace}/clusterNode/password.txt" --mine \
          --rpc.allow-unprotected-txs --light.serve 50 \
-         --gcmode archive --ws --datadir ${workspace}/clusterNode/node${nodeNum} --config ${workspace}/clusterNode/node${nodeNum}/config.toml \
-         --metrics --pprof --pprof.port "$((6060+$nodeNum))" --http.corsdomain "https://remix.ethereum.org" > ${workspace}/clusterNode/node${nodeNum}/bsc-node.log 2>&1 &
+         --gcmode archive --ws --datadir ${workspace}/clusterNode/node${i} --config ${workspace}/clusterNode/node${i}/config.toml \
+         --metrics --pprof --pprof.port "$((6060+$i))" --http.corsdomain "https://remix.ethereum.org" > ${workspace}/clusterNode/node${i}/bsc-node.log 2>&1 &
         
-        echo "start validator $nodeNum as archive node"
-        nodeNum=$(($nodeNum+1))
+        echo "start validator $i, ${validatorAddr[$validatorIndex]}"
+        echo ${validatorAddr[$validatorIndex]} > ${workspace}/clusterNode/validator${i}addr
     done
 }
 
-function startFullNode() {
+function restartNode() {
     num=$1
-    nodeNum=$2
     for((i=1;i<=$num;i++)); do
-        validatorIndex=$(($nodeNum-1))
-        nohup ${workspace}/bin/geth -unlock ${validatorAddr[$validatorIndex]} --password "${workspace}/clusterNode/password.txt" --mine \
+        nohup ${workspace}/bin/geth -unlock $(cat ${workspace}/clusterNode/validator${i}addr) --password "${workspace}/clusterNode/password.txt" --mine \
          --rpc.allow-unprotected-txs --light.serve 50 \
-         --gcmode full --ws --datadir ${workspace}/clusterNode/node${nodeNum} --config ${workspace}/clusterNode/node${nodeNum}/config.toml \
-         --metrics --pprof --pprof.port "$((6060+$nodeNum))" --http.corsdomain "https://remix.ethereum.org" > ${workspace}/clusterNode/node${nodeNum}/bsc-node.log 2>&1 &
+         --gcmode archive --ws --datadir ${workspace}/clusterNode/node${i} --config ${workspace}/clusterNode/node${i}/config.toml \
+         --metrics --pprof --pprof.port "$((6060+$i))" --http.corsdomain "https://remix.ethereum.org" > ${workspace}/clusterNode/node${i}/bsc-node.log 2>&1 &
 
-        echo "start validator $nodeNum as full node"
-        nodeNum=$(($nodeNum+1))
+        echo "restart validator $i, $(cat ${workspace}/clusterNode/validator${i}addr)"
     done
 }
 
@@ -145,28 +145,35 @@ CMD=$1
 
 case ${CMD} in
 start)
-    source ~/.bash_profile
     exit_previous
-    fullNum=2
+    validatorNum=3
     if [ ! -z $3 ] && [ "$3" -gt "0" ]; then
-      fullNum=$3
+      validatorNum=$3
     fi
-    archiveNum=1
-    if [ ! -z $4 ] && [ "$4" -gt "0" ]; then
-      archiveNum=$4
+    bnbHolderAddr="0xD8C0Aa483406A1891E5e03B21F2bc01379fc3b20"
+    if [ ! -z $2 ] && [ "$2" -gt "0" ]; then
+      bnbHolderAddr=$2
     fi
-    validatorNum=archiveNum+fullNum
     echo "===== generate node key ===="
     generate_nodekey $validatorNum
     echo "===== preparing ===="
-    bnbHolderAddr=$2
     prepare $validatorNum
     prepareGethEnv $validatorNum
     generateGenesis $validatorNum
     echo "===== starting client ===="
-    startFullNode fullNum 1
-    startArchiveNode archiveNum $((fullNum+1))
+    startNode $validatorNum
+    ps -ax | grep geth
     echo "Finish deploy"
+    ;;
+restart)
+    exit_previous
+    validatorNum=3
+    if [ ! -z $3 ] && [ "$3" -gt "0" ]; then
+      validatorNum=$3
+    fi
+    echo "===== restarting client ===="
+    restartNode $validatorNum
+    echo "Finish restart"
     ;;
 stop)
     echo "===== stopping client ===="
@@ -174,7 +181,7 @@ stop)
     echo "===== client stopped ===="
     ;;
 *)
-    echo "Usage: localup.sh start | stop | genreate \${number} "
+    echo "Usage: localup.sh start | restart | stop | genreate \${number} "
     ;;
 esac
 
