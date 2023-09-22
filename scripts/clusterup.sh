@@ -106,7 +106,7 @@ function generateGenesis(){
 
     for((i=1;i<=$num;i++)); do
       validatorIndex=$(($i-1))
-      ${workspace}/bin/geth --datadir ${workspace}/clusterNode/node${i} init ${workspace}/genesis/genesis.json
+      ${workspace}/bin/geth --datadir ${workspace}/clusterNode/node${i} --state.scheme path init ${workspace}/genesis/genesis.json
       staticPeers=$(generate_static_peers $num $i)
       sed "s/{{StaticNodes}}/${staticPeers}/g" ${workspace}/scripts/asset/config-cluster.toml > ${workspace}/clusterNode/node${i}/config.toml
       sed -i.bak "s/{{etherbase}}/${validatorAddr[$validatorIndex]}/g" ${workspace}/clusterNode/node${i}/config.toml
@@ -134,7 +134,7 @@ function startFullNodeWithExpiry() {
     for((i=1;i<=$num;i++)); do
         validatorIndex=$(($nodeNum-1))
         nohup ${workspace}/bin/geth -unlock ${validatorAddr[$validatorIndex]} --http --http.port "$((8501+$nodeNum))" --ws.port "$((8545+$nodeNum))" \
-         --config ${workspace}/clusterNode/node${nodeNum}/config.toml \
+         --config ${workspace}/clusterNode/node${nodeNum}/config.toml --state.scheme path \
          --authrpc.port "$((8550+$nodeNum))" --password "${workspace}/clusterNode/password.txt" \
          --mine --miner.etherbase ${validatorAddr[$validatorIndex]} --rpc.allow-unprotected-txs --allow-insecure-unlock --light.serve 50 \
          --gcmode full --ws --datadir ${workspace}/clusterNode/node${nodeNum} \
@@ -154,7 +154,7 @@ function startFullNodeNoExpiry() {
     for((i=1;i<=$num;i++)); do
         validatorIndex=$(($nodeNum-1))
         nohup ${workspace}/bin/geth -unlock ${validatorAddr[$validatorIndex]} --http --http.port "$((8501+$nodeNum))" --ws.port "$((8545+$nodeNum))" \
-         --config ${workspace}/clusterNode/node${nodeNum}/config.toml \
+         --config ${workspace}/clusterNode/node${nodeNum}/config.toml --state.scheme path \
          --authrpc.port "$((8550+$nodeNum))" --password "${workspace}/clusterNode/password.txt" \
          --mine --miner.etherbase ${validatorAddr[$validatorIndex]} --rpc.allow-unprotected-txs --allow-insecure-unlock --light.serve 50 \
          --gcmode full --ws --datadir ${workspace}/clusterNode/node${nodeNum} --rpc.txfeecap 0 \
